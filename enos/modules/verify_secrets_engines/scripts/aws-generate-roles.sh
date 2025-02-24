@@ -9,15 +9,19 @@ fail() {
   exit 1
 }
 
-# # -------PKI TESTING
- MOUNT=aws
- AWS_REGION=us-east-1
- AWS_ROLE=test-role
- VAULT_ADDR=http://127.0.0.1:8200
- VAULT_INSTALL_DIR=/opt/homebrew/bin
- VAULT_TOKEN=root
- vault secrets enable --path=${MOUNT} aws > /dev/null 2>&1  || echo "AWS Engine already enabled!"
+## # -------PKI TESTING
+# MOUNT=aws
+# AWS_REGION=us-east-1
+# AWS_ROLE=test-role
+# VAULT_ADDR=http://127.0.0.1:8200
+# VAULT_INSTALL_DIR=/opt/homebrew/bin
+# VAULT_TOKEN=root
+# AWS_PRECREATED_ROLE="vault-assumed-role-credentials-demo"
+# ACCOUNT_NUM="774305585021"
+# vault secrets enable --path=${MOUNT} aws > /dev/null 2>&1  || echo "AWS Engine already enabled!"
+
 echo -e "------------|${AWS_REGION}|-----------|${AWS_ACCESS_KEY_ID}|-------|${AWS_SECRET_ACCESS_KEY}|-----\n"
+[[ -z "$AWS_PRECREATED_ROLE" ]] && fail "AWS_PRECREATED_ROLE env variable has not been set"
 [[ -z "$AWS_REGION" ]] && fail "AWS_REGION env variable has not been set"
 [[ -z "$AWS_ACCESS_KEY_ID" ]] && fail "AWS_ACCESS_KEY_ID env variable has not been set"
 [[ -z "$AWS_SECRET_ACCESS_KEY" ]] && fail "AWS_SECRET_ACCESS_KEY env variable has not been set"
@@ -38,14 +42,16 @@ echo "Configuring Vault AWS"
 echo "Setup Vault/AWS role.."
 #"$binpath" write "${MOUNT}/roles/${AWS_ROLE}" credential_type=iam_user policy_arns="arn:aws:iam::aws:policy/AdministratorAccess" ttl="1h" max_ttl="24h" || fail "Cannot create AWS role"
 "$binpath" write "aws/roles/${AWS_ROLE}" \
-    credential_type=iam_user \
+    credential_type="iam_user" \
+    permissions_boundary_arn="arn:aws:iam::774305585021:policy/DemoUser" \
     policy_document=-<<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid":"VaultDemoUserDescribeEC2Regions",
       "Effect": "Allow",
-      "Action": "ec2:*",
+      "Action": "ec2:DescribeRegions",
       "Resource": "*"
     }
   ]
@@ -53,6 +59,8 @@ echo "Setup Vault/AWS role.."
 EOF
 
 echo "Verifying roles list"
+"$binpath" list "${MOUNT}/roles"
+"$binpath" read "${MOUNT}/roles/${AWS_ROLE}"
 ROLE=$("$binpath" list "${MOUNT}/roles" | jq -r '.[]')
 [[ -z "$ROLE" ]] && fail "No AWS roles created!"
 
@@ -61,5 +69,6 @@ echo "Verifying Root Access Key"
 ROOT_ACCESS_KEY=$("$binpath" read "${MOUNT}/config/root" | jq -r '.data.access_key')
 [[ "$ROOT_ACCESS_KEY" != "$AWS_ACCESS_KEY_ID" ]] && fail "AWS Access Key does not match: $ROOT_ACCESS_KEY, $AWS_ACCESS_KEY_ID"
 
-## Read role
-#"$binpath" read "${MOUNT}/creds/${AWS_ROLE}"
+# Read role
+echo "Verifying New Credentials"
+"$binpath" read "${MOUNT}/creds/${AWS_ROLE}"
