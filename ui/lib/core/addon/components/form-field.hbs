@@ -188,16 +188,16 @@
       @onChange={{this.onChangeWithEvent}}
     />
   {{else if (eq @attr.options.editType "toggleButton")}}
-    {{! Togglable Input }}
+    {{! Toggle Input }}
     <Toggle
       @name="toggle-{{@attr.name}}"
-      @onChange={{this.toggleShow}}
-      @checked={{this.showInput}}
+      @onChange={{this.toggledInput}}
+      @checked={{this.toggleInput}}
       data-test-toggle={{@attr.name}}
     >
       <span class="has-text-weight-bold is-large">{{this.labelString}}</span><br />
       <div class="description has-text-grey">
-        {{#if this.showInput}}
+        {{#if this.toggleInput}}
           <span>
             {{@attr.options.subText}}
           </span>
