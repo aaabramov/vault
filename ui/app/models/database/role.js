@@ -55,10 +55,11 @@ export default Model.extend({
     helperTextEnabled: 'Vault will rotate password after',
   }),
   skip_import_rotation: attr({
-    label: 'Skip initial rotation',
-    editType: 'boolean',
-    defaultValue: false,
-    subText: 'When unchecked, Vault automatically rotates the password upon creation',
+    label: 'Rotate password',
+    editType: 'toggleButton',
+    defaultValue: true,
+    defaultSubText: 'Vault will skip initial password rotation',
+    subText: 'Vault will rotate password once created',
   }),
   creation_statements: attr('array', {
     editType: 'stringArray',
